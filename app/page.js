@@ -136,6 +136,7 @@ export default function StoreFront() {
                 <div style={{position:"relative"}}>
                   {product.image?(isVideo(product.image)?<video src={product.image} muted style={{width:"100%",aspectRatio:"3/4",objectFit:"cover"}}/>:<img src={product.image} alt={product.name} style={{width:"100%",aspectRatio:"3/4",objectFit:"cover"}}/>)
                   :<div style={{width:"100%",aspectRatio:"3/4",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,var(--surface),var(--card))",color:"var(--dim)",fontSize:13}}>{product.name}</div>}
+                  {product.video&&<div style={{position:"absolute",bottom:10,left:10,background:"rgba(0,0,0,.6)",color:"#fff",padding:"3px 8px",borderRadius:5,fontSize:10,display:"flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>Video</div>}
                   {product.badge&&<span style={{position:"absolute",top:10,right:10,background:product.badge==="HOT"?"var(--red)":product.badge==="NEW"?"var(--accent)":product.badge==="SALE"?"var(--green)":"var(--gold)",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:6}}>{product.badge}</span>}
                 </div>
                 <div style={{padding:"14px 16px 16px"}}>
