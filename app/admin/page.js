@@ -24,11 +24,11 @@ export default function AdminPanel() {
   };
 
   const login = async () => {
-    try {
-      const res = await fetch("/api/products", { method: "POST", headers: { "x-admin-password": password, "Content-Type": "application/json" }, body: JSON.stringify({ _test: true }) });
-      if (res.status === 401) { flash("Wrong password", "error"); return; }
+    if (password === ADMIN_PASSWORD) {
       setAuthed(true); loadProducts();
-    } catch { setAuthed(true); loadProducts(); }
+    } else {
+      flash("Wrong password", "error");
+    }
   };
 
   const startNew = () => {
@@ -84,7 +84,7 @@ export default function AdminPanel() {
             <p style={{ color: "var(--muted)", fontSize: 14 }}>Enter your admin password to manage products</p>
           </div>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && login()} placeholder="Admin password" style={{ ...inputStyle, marginBottom: 16, padding: "14px 18px", fontSize: 16 }} autoFocus />
-          <button onClick={login} style={{ ...btnStyle(), width: "100%", padding: "14px", fontSize: 16 }}>ð Login</button>
+          <button onClick={login} style={{ ...btnStyle(), width: "100%", padding: "14px", fontSize: 16 }}>Ã°ÂÂÂ Login</button>
           {message && (<p style={{ marginTop: 12, textAlign: "center", fontSize: 13, color: message.type === "error" ? "var(--red)" : "var(--green)" }}>{message.text}</p>)}
         </div>
       </div>
@@ -99,7 +99,7 @@ export default function AdminPanel() {
             <span style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: 18 }}>Admin Panel</span>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <a href="/" style={{ fontSize: 13, color: "var(--muted)" }}>â View Store</a>
+            <a href="/" style={{ fontSize: 13, color: "var(--muted)" }}>Ã¢ÂÂ View Store</a>
             <button onClick={() => { setAuthed(false); setPassword(""); }} style={{ ...btnStyle("var(--surface)"), border: "1px solid var(--border)", color: "var(--muted)" }}>Logout</button>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function AdminPanel() {
             {loading && <p style={{ color: "var(--muted)", textAlign: "center", padding: 40 }}>Loading...</p>}
             {!loading && products.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px", background: "var(--card)", borderRadius: 16, border: "1px solid var(--border)" }}>
-                <p style={{ fontSize: 48, marginBottom: 16 }}>ð¦</p>
+                <p style={{ fontSize: 48, marginBottom: 16 }}>Ã°ÂÂÂ¦</p>
                 <p style={{ color: "var(--muted)", fontSize: 16, marginBottom: 20 }}>No products yet</p>
                 <button onClick={startNew} style={btnStyle()}>Add Your First Product</button>
               </div>
@@ -126,13 +126,13 @@ export default function AdminPanel() {
               {products.map((product) => (
                 <div key={product.id} style={{ display: "flex", alignItems: "center", gap: 16, background: "var(--card)", borderRadius: 14, padding: "14px 20px", border: "1px solid var(--border)", flexWrap: "wrap" }}>
                   <div style={{ width: 56, height: 56, borderRadius: 10, overflow: "hidden", background: "var(--surface)", flexShrink: 0 }}>
-                    {product.image ? (<img src={product.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 24 }}>ð¦</div>)}
+                    {product.image ? (<img src={product.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />) : (<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 24 }}>Ã°ÂÂÂ¦</div>)}
                   </div>
                   <div style={{ flex: 1, minWidth: 150 }}>
                     <p style={{ fontSize: 15, fontWeight: 600 }}>{product.name}</p>
-                    <p style={{ fontSize: 11, color: "var(--dim)" }}>SKU: {product.sku} Â· {product.category}{product.inStock === false && <span style={{ color: "var(--red)", marginLeft: 8 }}>â Out of Stock</span>}</p>
+                    <p style={{ fontSize: 11, color: "var(--dim)" }}>SKU: {product.sku} ÃÂ· {product.category}{product.inStock === false && <span style={{ color: "var(--red)", marginLeft: 8 }}>Ã¢ÂÂ Out of Stock</span>}</p>
                   </div>
-                  <span style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: 18, color: "var(--accent)", minWidth: 100, textAlign: "right" }}>{fmt(product.price)}</span>
+                  <span style={{ fontFamily: "'Outfit'", fontWeight: 700, fontSize: 18, color: "var(--accent)", minWidth: 100, textAlign: "right" }}>{fmt(product.price || 0)}</span>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => startEdit(product)} style={{ ...btnStyle("var(--surface)"), border: "1px solid var(--border)", color: "var(--accent)", fontSize: 12 }}>Edit</button>
                     <button onClick={() => deleteProduct(product.id)} style={{ ...btnStyle("transparent"), border: "1px solid var(--border)", color: "var(--red)", fontSize: 12 }}>Delete</button>
@@ -144,7 +144,7 @@ export default function AdminPanel() {
         )}
         {editing && (
           <div style={{ maxWidth: 700, margin: "0 auto" }}>
-            <button onClick={() => setEditing(null)} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 14, marginBottom: 20 }}>â Back to Products</button>
+            <button onClick={() => setEditing(null)} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: 14, marginBottom: 20 }}>Ã¢ÂÂ Back to Products</button>
             <h2 style={{ fontFamily: "'Outfit'", fontSize: 24, fontWeight: 700, marginBottom: 24 }}>{editing === "new" ? "Add New Product" : "Edit Product"}</h2>
             <div style={{ background: "var(--card)", borderRadius: 16, border: "1px solid var(--border)", padding: 24 }}>
               <div style={{ marginBottom: 24 }}>
@@ -152,7 +152,7 @@ export default function AdminPanel() {
                 {form.image && (<div style={{ marginBottom: 12, borderRadius: 12, overflow: "hidden", maxHeight: 250 }}><img src={form.image} alt="Preview" style={{ width: "100%", maxHeight: 250, objectFit: "cover" }} /></div>)}
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input type="file" ref={fileRef} accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => e.target.files[0] && uploadImage(e.target.files[0])} style={{ display: "none" }} />
-                  <button onClick={() => fileRef.current.click()} disabled={uploading} style={{ ...btnStyle("var(--surface)"), border: "1px solid var(--border)", color: "var(--accent)" }}>{uploading ? "Uploading..." : "ð· Upload Image"}</button>
+                  <button onClick={() => fileRef.current.click()} disabled={uploading} style={{ ...btnStyle("var(--surface)"), border: "1px solid var(--border)", color: "var(--accent)" }}>{uploading ? "Uploading..." : "Ã°ÂÂÂ· Upload Image"}</button>
                   <span style={{ fontSize: 12, color: "var(--dim)" }}>or paste URL:</span>
                   <input value={form.image || ""} onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))} placeholder="https://..." style={{ ...inputStyle, flex: 1, minWidth: 200 }} />
                 </div>
@@ -207,7 +207,7 @@ export default function AdminPanel() {
               </div>
 
               <div style={{ display: "flex", gap: 12, marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                <button onClick={saveProduct} style={{ ...btnStyle(), flex: 1, padding: "14px", fontSize: 15 }}>{editing === "new" ? "â Create Product" : "â Save Changes"}</button>
+                <button onClick={saveProduct} style={{ ...btnStyle(), flex: 1, padding: "14px", fontSize: 15 }}>{editing === "new" ? "Ã¢ÂÂ Create Product" : "Ã¢ÂÂ Save Changes"}</button>
                 <button onClick={() => setEditing(null)} style={{ ...btnStyle("var(--surface)"), border: "1px solid var(--border)", color: "var(--muted)", padding: "14px 24px" }}>Cancel</button>
               </div>
             </div>
