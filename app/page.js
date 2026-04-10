@@ -78,19 +78,19 @@ export default function StoreFront() {
 
         {/* PRODUCT DETAIL MODAL - VERTICAL FORMAT */}
         {selectedProduct&&(<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:10}} onClick={()=>setSelectedProduct(null)}>
-          <div onClick={e=>e.stopPropagation()} style={{background:"var(--card)",borderRadius:20,border:"1px solid var(--border)",maxWidth:480,width:"100%",maxHeight:"95vh",overflow:"auto"}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",maxWidth:360,width:"100%",maxHeight:"90vh",overflow:"auto"}}>
             {/* VERTICAL IMAGE - tap to view full resolution */}
             {selectedProduct.image&&<div style={{position:"relative",cursor:"pointer"}} onClick={()=>setFullscreenMedia(selectedProduct.image)}>
-              {isVideo(selectedProduct.image)?<video src={selectedProduct.image} controls style={{width:"100%",aspectRatio:"3/4",objectFit:"cover",borderRadius:"20px 20px 0 0"}}/>
-              :<img src={selectedProduct.image} alt={selectedProduct.name} style={{width:"100%",aspectRatio:"3/4",objectFit:"cover",borderRadius:"20px 20px 0 0"}}/>}
-              <div style={{position:"absolute",bottom:12,right:12,background:"rgba(0,0,0,.6)",color:"#fff",padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>Tap to view full size</div>
+              {isVideo(selectedProduct.image)?<video src={selectedProduct.image} controls style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",borderRadius:"16px 16px 0 0"}}/>
+              :<img src={selectedProduct.image} alt={selectedProduct.name} style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",borderRadius:"16px 16px 0 0"}}/>}
+              <div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>Tap to view full size</div>
             </div>}
             {!selectedProduct.image&&<div style={{height:200,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface)",borderRadius:"20px 20px 0 0",color:"var(--dim)"}}>No image</div>}
             
-            <div style={{padding:20}}>
+            <div style={{padding:16}}>
               <p style={{fontSize:11,color:"var(--dim)",fontWeight:600,letterSpacing:".08em"}}>SKU: {selectedProduct.sku} - {selectedProduct.category}</p>
-              <h2 style={{fontSize:20,fontWeight:700,marginTop:4,marginBottom:8}}>{selectedProduct.name}</h2>
-              <span style={{fontFamily:"'Outfit'",fontSize:26,fontWeight:800,color:"var(--accent)"}}>{fmt(selectedProduct.price)}</span>
+              <h2 style={{fontSize:17,fontWeight:700,marginTop:3,marginBottom:6}}>{selectedProduct.name}</h2>
+              <span style={{fontFamily:"'Outfit'",fontSize:22,fontWeight:800,color:"var(--accent)"}}>{fmt(selectedProduct.price)}</span>
               
               {selectedProduct.description&&<p style={{color:"var(--muted)",fontSize:14,lineHeight:1.6,marginTop:12,marginBottom:12}}>{selectedProduct.description}</p>}
               
@@ -103,8 +103,8 @@ export default function StoreFront() {
               </div>
               
               <div style={{display:"flex",gap:12}}>
-                <button onClick={()=>{addToCart(selectedProduct);setSelectedProduct(null);}} style={{flex:1,padding:"14px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--accent),#8b5cf6)",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>Add to Cart</button>
-                <button onClick={()=>setSelectedProduct(null)} style={{padding:"14px 20px",borderRadius:12,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--muted)",fontSize:14,cursor:"pointer"}}>Close</button>
+                <button onClick={()=>{addToCart(selectedProduct);setSelectedProduct(null);}} style={{flex:1,padding:"12px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--accent),#8b5cf6)",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>Add to Cart</button>
+                <button onClick={()=>setSelectedProduct(null)} style={{padding:"12px 16px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--muted)",fontSize:14,cursor:"pointer"}}>Close</button>
               </div>
             </div>
           </div>
