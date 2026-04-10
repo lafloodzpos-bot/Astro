@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 import { CATEGORIES, PRODUCT_FIELDS, ADMIN_PASSWORD, fmt } from "@/lib/config";
 
 export default function AdminPanel() {
@@ -10,6 +11,7 @@ export default function AdminPanel() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [message, setMessage] = useState(null);
   const fileRef = useRef(null);
   const flash = (text, type = "success") => { setMessage({ text, type }); setTimeout(() => setMessage(null), 3000); };
@@ -17,16 +19,24 @@ export default function AdminPanel() {
   const login = () => { if (password === ADMIN_PASSWORD) { setAuthed(true); loadProducts(); } else { flash("Wrong password", "error"); } };
   const startNew = () => { setEditing("new"); setForm({ name:"", sku:"QP"+Math.floor(10000+Math.random()*90000), price:"", category:CATEGORIES[1]||"Highs", image:"", inStock:true, description:"", smellRating:"", tasteRating:"", potency:"", strain:"", weight:"", badge:"" }); };
   const startEdit = (p) => { setEditing(p.id); setForm({...p}); };
-  const uploadImage = async (file) => {
+  
+  const uploadFile = async (file) => {
     setUploading(true);
+    setUploadProgress("Starting upload...");
     try {
-      const fd = new FormData(); fd.append("file", file);
-      const res = await fetch("/api/upload", { method:"POST", headers:{"x-admin-password":password}, body:fd });
-      if (!res.ok) { const e = await res.json(); flash(e.error||"Upload failed","error"); setUploading(false); return; }
-      const data = await res.json(); setForm(p => ({...p, image:data.url})); flash("Image uploaded!");
-    } catch { flash("Upload failed","error"); }
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      setForm(p => ({...p, image: blob.url}));
+      flash("File uploaded! (" + (file.size / 1024 / 1024).toFixed(1) + "MB)");
+    } catch (err) {
+      flash("Upload failed: " + (err.message || "Unknown error"), "error");
+    }
     setUploading(false);
+    setUploadProgress("");
   };
+
   const saveProduct = async () => {
     if (!form.name||!form.price) { flash("Name and price required","error"); return; }
     const pd = {...form, price:parseFloat(form.price), inStock:form.inStock!==false};
@@ -81,12 +91,12 @@ export default function AdminPanel() {
             <button onClick={startNew} style={bs()}>+ Add New Product</button>
           </div>
           {loading&&<p style={{color:"var(--muted)",textAlign:"center",padding:40}}>Loading...</p>}
-          {!loading&&products.length===0&&<div style={{textAlign:"center",padding:"60px 20px",background:"var(--card)",borderRadius:16,border:"1px solid var(--border)"}}><p style={{fontSize:48,marginBottom:16}}>No products yet</p><button onClick={startNew} style={bs()}>Add Your First Product</button></div>}
+          {!loading&&products.length===0&&<div style={{textAlign:"center",padding:"60px 20px",background:"var(--card)",borderRadius:16,border:"1px solid var(--border)"}}><p style={{fontSize:18,marginBottom:16,color:"var(--muted)"}}>No products yet</p><button onClick={startNew} style={bs()}>Add Your First Product</button></div>}
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {products.filter(p=>p.name).map(product=>(
               <div key={product.id} style={{display:"flex",alignItems:"center",gap:16,background:"var(--card)",borderRadius:14,padding:"14px 20px",border:"1px solid var(--border)",flexWrap:"wrap"}}>
                 <div style={{width:56,height:56,borderRadius:10,overflow:"hidden",background:"var(--surface)",flexShrink:0}}>
-                  {product.image?<img src={product.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:24}}>No img</div>}
+                  {product.image?<img src={product.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:12,color:"var(--dim)"}}>No img</div>}
                 </div>
                 <div style={{flex:1,minWidth:150}}>
                   <p style={{fontSize:15,fontWeight:600}}>{product.name}</p>
@@ -106,13 +116,18 @@ export default function AdminPanel() {
           <h2 style={{fontFamily:"'Outfit'",fontSize:24,fontWeight:700,marginBottom:24}}>{editing==="new"?"Add New Product":"Edit Product"}</h2>
           <div style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",padding:24}}>
             <div style={{marginBottom:24}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase"}}>Product Image</label>
-              {form.image&&<div style={{marginBottom:12,borderRadius:12,overflow:"hidden",maxHeight:250}}><img src={form.image} alt="Preview" style={{width:"100%",maxHeight:250,objectFit:"cover"}}/></div>}
+              <label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase"}}>Product Photo or Video</label>
+              {form.image&&<div style={{marginBottom:12,borderRadius:12,overflow:"hidden",maxHeight:300}}>
+                {form.image.match(/\.(mp4|mov|webm)$/i)?<video src={form.image} controls style={{width:"100%",maxHeight:300}}/>:<img src={form.image} alt="Preview" style={{width:"100%",maxHeight:300,objectFit:"cover"}}/>}
+              </div>}
               <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <input type="file" ref={fileRef} accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>e.target.files[0]&&uploadImage(e.target.files[0])} style={{display:"none"}}/>
-                <button onClick={()=>fileRef.current.click()} disabled={uploading} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--accent)"}}>{uploading?"Uploading...":"Upload Image"}</button>
-                <span style={{fontSize:12,color:"var(--dim)"}}>or paste URL:</span>
-                <input value={form.image||""} onChange={e=>setForm(p=>({...p,image:e.target.value}))} placeholder="https://..." style={{...is,flex:1,minWidth:200}}/>
+                <input type="file" ref={fileRef} accept="image/*,video/*" onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0])} style={{display:"none"}}/>
+                <button onClick={()=>fileRef.current.click()} disabled={uploading} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--accent)"}}>{uploading?uploadProgress||"Uploading...":"Upload Photo/Video"}</button>
+                <span style={{fontSize:11,color:"var(--dim)"}}>Max 100MB. JPG, PNG, MP4, MOV supported.</span>
+              </div>
+              <div style={{marginTop:8}}>
+                <span style={{fontSize:12,color:"var(--dim)"}}>or paste URL: </span>
+                <input value={form.image||""} onChange={e=>setForm(p=>({...p,image:e.target.value}))} placeholder="https://..." style={{...is,marginTop:4}}/>
               </div>
             </div>
             <div style={{display:"grid",gap:16,marginBottom:24}}>
