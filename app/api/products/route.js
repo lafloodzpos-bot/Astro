@@ -17,6 +17,9 @@ export async function POST(request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = await request.json();
+  if (!body.name || body._test) {
+    return NextResponse.json({ error: "Valid product name required" }, { status: 400 });
+  }
   const product = await addProduct(body);
   return NextResponse.json(product, { status: 201 });
 }
