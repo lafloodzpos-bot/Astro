@@ -23,6 +23,7 @@ export default function StoreFront() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
 
+  useEffect(() => { if(selectedProduct||fullscreenMedia){document.body.style.overflow="hidden";}else{document.body.style.overflow="";} return()=>{document.body.style.overflow="";}; }, [selectedProduct,fullscreenMedia]);
   useEffect(() => { fetch("/api/products").then(r=>r.json()).then(data=>{setProducts(data);setLoading(false);}).catch(()=>setLoading(false)); }, []);
 
   const cartCount = cart.reduce((s,i)=>s+i.qty,0);
@@ -51,9 +52,12 @@ export default function StoreFront() {
   return (
     <div>
       {/* FULLSCREEN MEDIA VIEWER */}
-      {fullscreenMedia&&(<div onClick={()=>setFullscreenMedia(null)} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,.95)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out",padding:10}}>
-        <button onClick={()=>setFullscreenMedia(null)} style={{position:"absolute",top:20,right:20,background:"rgba(255,255,255,.2)",border:"none",color:"#fff",fontSize:24,width:44,height:44,borderRadius:"50%",cursor:"pointer",zIndex:301}}>X</button>
-        {isVideo(fullscreenMedia)?<video src={fullscreenMedia} controls autoPlay style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>:<img src={fullscreenMedia} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/>}
+      {fullscreenMedia&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:300,background:"#000",touchAction:"none",overflow:"hidden"}}>
+        <button onClick={()=>setFullscreenMedia(null)} style={{position:"fixed",top:16,right:16,background:"rgba(255,255,255,.25)",border:"none",color:"#fff",fontSize:20,width:40,height:40,borderRadius:"50%",cursor:"pointer",zIndex:302,display:"flex",alignItems:"center",justifyContent:"center"}}>X</button>
+        <div style={{width:"100%",height:"100%",overflow:"auto",WebkitOverflowScrolling:"touch",display:"flex",alignItems:"center",justifyContent:"center"}}>
+          {isVideo(fullscreenMedia)?<video src={fullscreenMedia} controls autoPlay playsInline style={{maxWidth:"100%",maxHeight:"100vh",objectFit:"contain"}}/>
+          :<img src={fullscreenMedia} alt="" onClick={e=>{if(e.target.style.maxWidth==="100%"){e.target.style.maxWidth="none";e.target.style.width="auto";e.target.style.maxHeight="none";}else{e.target.style.maxWidth="100%";e.target.style.width="100%";e.target.style.maxHeight="100vh";}}} style={{maxWidth:"100%",maxHeight:"100vh",objectFit:"contain",transition:"none"}}/>}
+        </div>
       </div>)}
 
       {/* HEADER */}
@@ -77,7 +81,7 @@ export default function StoreFront() {
         {loading&&<div style={{textAlign:"center",padding:80,color:"var(--muted)"}}><p>Loading products...</p></div>}
 
         {/* PRODUCT DETAIL MODAL - VERTICAL FORMAT */}
-        {selectedProduct&&(<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:10}} onClick={()=>setSelectedProduct(null)}>
+        {selectedProduct&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:10,overflowY:"auto",WebkitOverflowScrolling:"touch"}} onClick={()=>setSelectedProduct(null)}>
           <div onClick={e=>e.stopPropagation()} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",maxWidth:360,width:"100%",maxHeight:"90vh",overflow:"auto"}}>
             {/* VERTICAL IMAGE - tap to view full resolution */}
             {selectedProduct.image&&<div style={{position:"relative",cursor:"pointer"}} onClick={()=>setFullscreenMedia(selectedProduct.image)}>
