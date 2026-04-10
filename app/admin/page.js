@@ -10,31 +10,25 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [message, setMessage] = useState(null);
-  const fileRef = useRef(null);
+  const imageRef = useRef(null);
+  const videoRef = useRef(null);
   const flash = (text, type = "success") => { setMessage({ text, type }); setTimeout(() => setMessage(null), 3000); };
   const loadProducts = async () => { setLoading(true); try { const res = await fetch("/api/products"); setProducts(await res.json()); } catch { flash("Failed to load", "error"); } setLoading(false); };
   const login = () => { if (password === ADMIN_PASSWORD) { setAuthed(true); loadProducts(); } else { flash("Wrong password", "error"); } };
-  const startNew = () => { setEditing("new"); setForm({ name:"", sku:"QP"+Math.floor(10000+Math.random()*90000), price:"", category:CATEGORIES[1]||"Highs", image:"", inStock:true, description:"", smellRating:"", tasteRating:"", potency:"", strain:"", weight:"", badge:"" }); };
+  const startNew = () => { setEditing("new"); setForm({ name:"", sku:"QP"+Math.floor(10000+Math.random()*90000), price:"", category:CATEGORIES[1]||"Highs", image:"", video:"", inStock:true, description:"", smellRating:"", tasteRating:"", potency:"", strain:"", weight:"", badge:"" }); };
   const startEdit = (p) => { setEditing(p.id); setForm({...p}); };
   
-  const uploadFile = async (file) => {
+  const uploadFile = async (file, field, setUploading) => {
     setUploading(true);
-    setUploadProgress("Starting upload...");
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      setForm(p => ({...p, image: blob.url}));
-      flash("File uploaded! (" + (file.size / 1024 / 1024).toFixed(1) + "MB)");
-    } catch (err) {
-      flash("Upload failed: " + (err.message || "Unknown error"), "error");
-    }
+      const blob = await upload(file.name, file, { access: "public", handleUploadUrl: "/api/upload" });
+      setForm(p => ({...p, [field]: blob.url}));
+      flash((field === "image" ? "Photo" : "Video") + " uploaded! (" + (file.size/1024/1024).toFixed(1) + "MB)");
+    } catch (err) { flash("Upload failed: " + (err.message || "Unknown error"), "error"); }
     setUploading(false);
-    setUploadProgress("");
   };
 
   const saveProduct = async () => {
@@ -60,7 +54,7 @@ export default function AdminPanel() {
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,var(--accent),#8b5cf6)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:800,color:"#fff",marginBottom:16}}>A</div>
           <h1 style={{fontFamily:"'Outfit'",fontSize:24,fontWeight:700,marginBottom:8}}>Admin Panel</h1>
-          <p style={{color:"var(--muted)",fontSize:14}}>Enter your admin password to manage products</p>
+          <p style={{color:"var(--muted)",fontSize:14}}>Enter your admin password</p>
         </div>
         <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&login()} placeholder="Admin password" style={{...is,marginBottom:16,padding:"14px 18px",fontSize:16}} autoFocus />
         <button onClick={login} style={{...bs(),width:"100%",padding:"14px",fontSize:16}}>Login</button>
@@ -73,14 +67,8 @@ export default function AdminPanel() {
     <div style={{minHeight:"100vh"}}>
       <header style={{background:"rgba(10,10,15,.88)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)",padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--accent),#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#fff"}}>A</div>
-            <span style={{fontFamily:"'Outfit'",fontWeight:700,fontSize:18}}>Admin Panel</span>
-          </div>
-          <div style={{display:"flex",gap:12,alignItems:"center"}}>
-            <a href="/" style={{fontSize:13,color:"var(--muted)"}}>View Store</a>
-            <button onClick={()=>{setAuthed(false);setPassword("");}} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--muted)"}}>Logout</button>
-          </div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--accent),#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#fff"}}>A</div><span style={{fontFamily:"'Outfit'",fontWeight:700,fontSize:18}}>Admin Panel</span></div>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}><a href="/" style={{fontSize:13,color:"var(--muted)"}}>View Store</a><button onClick={()=>{setAuthed(false);setPassword("");}} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--muted)"}}>Logout</button></div>
         </div>
       </header>
       {message&&<div style={{position:"fixed",top:80,left:"50%",transform:"translateX(-50%)",zIndex:200,background:message.type==="error"?"var(--red)":"var(--green)",color:"#fff",padding:"10px 24px",borderRadius:10,fontSize:14,fontWeight:600}}>{message.text}</div>}
@@ -100,7 +88,7 @@ export default function AdminPanel() {
                 </div>
                 <div style={{flex:1,minWidth:150}}>
                   <p style={{fontSize:15,fontWeight:600}}>{product.name}</p>
-                  <p style={{fontSize:11,color:"var(--dim)"}}>SKU: {product.sku} - {product.category}{product.inStock===false&&<span style={{color:"var(--red)",marginLeft:8}}>Out of Stock</span>}</p>
+                  <p style={{fontSize:11,color:"var(--dim)"}}>SKU: {product.sku} - {product.category} {product.video?" | Has video":""}{product.inStock===false&&<span style={{color:"var(--red)",marginLeft:8}}>Out of Stock</span>}</p>
                 </div>
                 <span style={{fontFamily:"'Outfit'",fontWeight:700,fontSize:18,color:"var(--accent)",minWidth:100,textAlign:"right"}}>{fmt(product.price||0)}</span>
                 <div style={{display:"flex",gap:8}}>
@@ -115,21 +103,31 @@ export default function AdminPanel() {
           <button onClick={()=>setEditing(null)} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,marginBottom:20}}>Back to Products</button>
           <h2 style={{fontFamily:"'Outfit'",fontSize:24,fontWeight:700,marginBottom:24}}>{editing==="new"?"Add New Product":"Edit Product"}</h2>
           <div style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",padding:24}}>
-            <div style={{marginBottom:24}}>
-              <label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase"}}>Product Photo or Video</label>
-              {form.image&&<div style={{marginBottom:12,borderRadius:12,overflow:"hidden",maxHeight:300}}>
-                {form.image.match(/\.(mp4|mov|webm)$/i)?<video src={form.image} controls style={{width:"100%",maxHeight:300}}/>:<img src={form.image} alt="Preview" style={{width:"100%",maxHeight:300,objectFit:"cover"}}/>}
-              </div>}
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <input type="file" ref={fileRef} accept="image/*,video/*" onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0])} style={{display:"none"}}/>
-                <button onClick={()=>fileRef.current.click()} disabled={uploading} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--accent)"}}>{uploading?uploadProgress||"Uploading...":"Upload Photo/Video"}</button>
-                <span style={{fontSize:11,color:"var(--dim)"}}>Max 100MB. JPG, PNG, MP4, MOV supported.</span>
-              </div>
-              <div style={{marginTop:8}}>
-                <span style={{fontSize:12,color:"var(--dim)"}}>or paste URL: </span>
-                <input value={form.image||""} onChange={e=>setForm(p=>({...p,image:e.target.value}))} placeholder="https://..." style={{...is,marginTop:4}}/>
+            
+            {/* PRODUCT IMAGE BOX */}
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase"}}>Product Image</label>
+              <div style={{border:"2px dashed var(--border)",borderRadius:12,padding:16,textAlign:"center",background:"var(--surface)"}}>
+                {form.image&&<div style={{marginBottom:12,borderRadius:8,overflow:"hidden"}}><img src={form.image} alt="Preview" style={{width:"100%",maxHeight:200,objectFit:"cover"}}/></div>}
+                <input type="file" ref={imageRef} accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0],"image",setUploadingImage)} style={{display:"none"}}/>
+                <button onClick={()=>imageRef.current.click()} disabled={uploadingImage} style={{...bs("var(--accent)"),opacity:uploadingImage?0.6:1}}>{uploadingImage?"Uploading Photo...":form.image?"Replace Photo":"Upload Photo"}</button>
+                <p style={{fontSize:11,color:"var(--dim)",marginTop:8}}>JPG, PNG, WebP, GIF accepted</p>
+                {form.image&&<button onClick={()=>setForm(p=>({...p,image:""}))} style={{background:"none",border:"none",color:"var(--red)",fontSize:12,cursor:"pointer",marginTop:4}}>Remove photo</button>}
               </div>
             </div>
+            
+            {/* PRODUCT VIDEO BOX */}
+            <div style={{marginBottom:24}}>
+              <label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:8,textTransform:"uppercase"}}>Product Video</label>
+              <div style={{border:"2px dashed var(--border)",borderRadius:12,padding:16,textAlign:"center",background:"var(--surface)"}}>
+                {form.video&&<div style={{marginBottom:12,borderRadius:8,overflow:"hidden"}}><video src={form.video} controls style={{width:"100%",maxHeight:200}}/></div>}
+                <input type="file" ref={videoRef} accept="video/mp4,video/quicktime,video/webm,video/mov" onChange={e=>e.target.files[0]&&uploadFile(e.target.files[0],"video",setUploadingVideo)} style={{display:"none"}}/>
+                <button onClick={()=>videoRef.current.click()} disabled={uploadingVideo} style={{...bs("#8b5cf6"),opacity:uploadingVideo?0.6:1}}>{uploadingVideo?"Uploading Video...":form.video?"Replace Video":"Upload Video"}</button>
+                <p style={{fontSize:11,color:"var(--dim)",marginTop:8}}>MP4, MOV, WebM accepted. Max 100MB.</p>
+                {form.video&&<button onClick={()=>setForm(p=>({...p,video:""}))} style={{background:"none",border:"none",color:"var(--red)",fontSize:12,cursor:"pointer",marginTop:4}}>Remove video</button>}
+              </div>
+            </div>
+
             <div style={{display:"grid",gap:16,marginBottom:24}}>
               <div><label style={{display:"block",fontSize:13,fontWeight:600,color:"var(--muted)",marginBottom:6}}>Product Name *</label><input value={form.name||""} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="e.g. LIMON CHERRY W/BAGS" style={is}/></div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
