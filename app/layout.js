@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Quality Packs | Premium Delivery",
-  description: "Premium Quality Packs - Explore our curated selection",
+  title: "AstroPacks",
+  description: "AstroPacks - Private",
 };
 
 export default function RootLayout({ children }) {
