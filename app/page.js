@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { SITE_TAGLINE, SITE_DESCRIPTION, SITE_NAME, CATEGORIES, SHIPPING_OPTIONS, PAYMENT_METHODS, PRODUCT_FIELDS, fmt, genOrderNum } from "@/lib/config";
+import { SITE_TAGLINE, SITE_DESCRIPTION, SITE_NAME, CATEGORIES, SHIPPING_OPTIONS, PAYMENT_METHODS, fmt, genOrderNum } from "@/lib/config";
 
 function Stars({ rating, label }) {
   if (!rating) return null;
@@ -16,15 +16,16 @@ export default function StoreFront() {
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [shipping, setShipping] = useState("free");
-  const [payment, setPayment] = useState("crypto");
+  const [payment, setPayment] = useState("cash");
   const [copied, setCopied] = useState(false);
-  
   const [addedId, setAddedId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
+  const [mediaSlide, setMediaSlide] = useState(0);
 
-  useEffect(() => { if(selectedProduct||fullscreenMedia){document.body.style.overflow="hidden";}else{document.body.style.overflow="";} return()=>{document.body.style.overflow="";}; }, [selectedProduct,fullscreenMedia]);
   useEffect(() => { fetch("/api/products").then(r=>r.json()).then(data=>{setProducts(data);setLoading(false);}).catch(()=>setLoading(false)); }, []);
+  useEffect(() => { if(selectedProduct||fullscreenMedia){document.body.style.overflow="hidden";}else{document.body.style.overflow="";} return()=>{document.body.style.overflow="";}; }, [selectedProduct,fullscreenMedia]);
+  useEffect(() => { setMediaSlide(0); }, [selectedProduct]);
 
   const cartCount = cart.reduce((s,i)=>s+i.qty,0);
   const subtotal = cart.reduce((s,i)=>s+i.price*i.qty,0);
@@ -36,7 +37,6 @@ export default function StoreFront() {
   const addToCart = (product) => { setCart(prev=>{const e=prev.find(i=>i.id===product.id);if(e)return prev.map(i=>i.id===product.id?{...i,qty:i.qty+1}:i);return[...prev,{...product,qty:1}];}); setAddedId(product.id); setTimeout(()=>setAddedId(null),1200); };
   const updateQty = (id,delta) => setCart(prev=>prev.map(i=>i.id===id?{...i,qty:Math.max(1,i.qty+delta)}:i));
   const removeFromCart = (id) => setCart(prev=>prev.filter(i=>i.id!==id));
-  const isVideo = (url) => url && url.match(/\.(mp4|mov|webm)$/i);
 
   const filtered = products.filter(p => { if(!p.name)return false; const matchCat=category==="All"||p.category===category; const matchSearch=p.name.toLowerCase().includes(search.toLowerCase()); return matchCat&&matchSearch; });
 
@@ -45,20 +45,19 @@ export default function StoreFront() {
     return `ORDER REQUEST\n\nITEMS:\n${items}\n\nORDER SUMMARY\n-------------\nTotal Items: ${cartCount}\nSubtotal: ${fmt(subtotal)}\nShipping (${shipOption.label}): ${fmt(shipOption.price)}\nPayment: ${payOption.label}\nTotal due = ${fmt(total)}\n${shipping==="free"?"FREE SHIPPING (UPS 2 Day Air / USPS Priority)":"OVERNIGHT NEXT DAY SHIPPING (+$50)"}\nOrder Number: ${genOrderNum()}\n\nShipping address will be collected after payment is processed.`;
   };
   const copyOrder = async () => { try{await navigator.clipboard.writeText(generateOrderText());}catch{const t=document.createElement("textarea");t.value=generateOrderText();document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);} setCopied(true);setTimeout(()=>setCopied(false),3000); };
-
   const is = {padding:"12px 16px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--text)",fontSize:14,outline:"none",width:"100%"};
 
   return (
     <div>
-      {/* FULLSCREEN MEDIA VIEWER */}
-      {fullscreenMedia&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:300,background:"#000",touchAction:"none",overflow:"hidden"}}>
-        <button onClick={()=>setFullscreenMedia(null)} style={{position:"fixed",top:16,right:16,background:"rgba(255,255,255,.25)",border:"none",color:"#fff",fontSize:20,width:40,height:40,borderRadius:"50%",cursor:"pointer",zIndex:302,display:"flex",alignItems:"center",justifyContent:"center"}}>X</button>
-        <div style={{width:"100%",height:"100%",overflow:"auto",WebkitOverflowScrolling:"touch",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          {isVideo(fullscreenMedia)?<video src={fullscreenMedia} controls autoPlay playsInline style={{maxWidth:"100%",maxHeight:"100vh",objectFit:"contain"}}/>
-          :<img src={fullscreenMedia} alt="" onClick={e=>{if(e.target.style.maxWidth==="100%"){e.target.style.maxWidth="none";e.target.style.width="auto";e.target.style.maxHeight="none";}else{e.target.style.maxWidth="100%";e.target.style.width="100%";e.target.style.maxHeight="100vh";}}} style={{maxWidth:"100%",maxHeight:"100vh",objectFit:"contain",transition:"none"}}/>}
-        </div>
-      </div>)}
+      <style>{`.no-scrollbar::-webkit-scrollbar{display:none} .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}`}</style>
 
+      {/* FULLSCREEN MEDIA VIEWER - simple, no zoom glitch */}
+      {fullscreenMedia&&<div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:300,background:"#000"}}>
+        <button onClick={()=>setFullscreenMedia(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.3)",border:"none",color:"#fff",fontSize:18,width:40,height:40,borderRadius:"50%",cursor:"pointer",zIndex:301,display:"flex",alignItems:"center",justifyContent:"center"}}>X</button>
+        {fullscreenMedia.endsWith('.mp4')||fullscreenMedia.endsWith('.mov')||fullscreenMedia.endsWith('.webm')
+          ?<video src={fullscreenMedia} controls autoPlay playsInline style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+          :<img src={fullscreenMedia} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}
+      </div>}
       {/* HEADER */}
       <header style={{position:"sticky",top:0,zIndex:100,background:"rgba(10,10,15,.88)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)",padding:"0 24px"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
@@ -79,40 +78,60 @@ export default function StoreFront() {
       <main style={{maxWidth:1280,margin:"0 auto",padding:"24px 24px 80px"}}>
         {loading&&<div style={{textAlign:"center",padding:80,color:"var(--muted)"}}><p>Loading products...</p></div>}
 
-        {/* PRODUCT DETAIL MODAL - VERTICAL FORMAT */}
-        {selectedProduct&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:10,overflowY:"auto",WebkitOverflowScrolling:"touch"}} onClick={()=>setSelectedProduct(null)}>
+        {/* PRODUCT DETAIL MODAL with swipeable photo/video */}
+        {selectedProduct&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:10,overflowY:"auto"}} onClick={()=>setSelectedProduct(null)}>
           <div onClick={e=>e.stopPropagation()} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",maxWidth:360,width:"100%",maxHeight:"90vh",overflow:"auto"}}>
-            {/* VERTICAL IMAGE - tap to view full resolution */}
-            {selectedProduct.image&&<div style={{position:"relative",cursor:"pointer"}} onClick={()=>setFullscreenMedia(selectedProduct.image)}>
-              {isVideo(selectedProduct.image)?<video src={selectedProduct.image} controls style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",borderRadius:"16px 16px 0 0"}}/>
-              :<img src={selectedProduct.image} alt={selectedProduct.name} style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",borderRadius:"16px 16px 0 0"}}/>}
-              <div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",padding:"6px 12px",borderRadius:8,fontSize:11,fontWeight:600}}>Tap to view full size</div>
-            </div>}
-            {!selectedProduct.image&&<div style={{height:200,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface)",borderRadius:"20px 20px 0 0",color:"var(--dim)"}}>No image</div>}
             
+            {/* SWIPEABLE MEDIA: Photo first, then Video */}
+            {(selectedProduct.image||selectedProduct.video)&&<div style={{position:"relative",borderRadius:"16px 16px 0 0",overflow:"hidden"}}>
+              {/* Slide container */}
+              <div style={{display:"flex",transition:"transform 0.3s ease",transform:"translateX(-"+(mediaSlide*100)+"%)",touchAction:"pan-y"}}>
+                {/* Photo slide */}
+                {selectedProduct.image&&<div style={{minWidth:"100%",flexShrink:0}}>
+                  <img src={selectedProduct.image} alt={selectedProduct.name} onClick={()=>setFullscreenMedia(selectedProduct.image)} style={{width:"100%",aspectRatio:"1/1",objectFit:"cover",display:"block",cursor:"pointer"}}/>
+                </div>}
+                {/* Video slide */}
+                {selectedProduct.video&&<div style={{minWidth:"100%",flexShrink:0,background:"#000"}}>
+                  <video src={selectedProduct.video} controls playsInline style={{width:"100%",aspectRatio:"1/1",objectFit:"contain",display:"block"}}/>
+                </div>}
+              </div>
+              {/* Dot indicators + swipe hint */}
+              {selectedProduct.image&&selectedProduct.video&&<div style={{position:"absolute",bottom:0,left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",paddingBottom:10}}>
+                <div style={{background:"rgba(0,0,0,.5)",color:"#fff",padding:"3px 10px",borderRadius:6,fontSize:10,marginBottom:6}}>{mediaSlide===0?"Swipe for video":"Swipe for photo"}</div>
+                <div style={{display:"flex",gap:6}}>
+                  <div onClick={()=>setMediaSlide(0)} style={{width:8,height:8,borderRadius:"50%",background:"#fff",opacity:mediaSlide===0?1:0.4,cursor:"pointer"}}/>
+                  <div onClick={()=>setMediaSlide(1)} style={{width:8,height:8,borderRadius:"50%",background:"#fff",opacity:mediaSlide===1?1:0.4,cursor:"pointer"}}/>
+                </div>
+              </div>}
+              {/* Swipe left/right arrows */}
+              {selectedProduct.image&&selectedProduct.video&&<>
+                {mediaSlide===1&&<button onClick={()=>setMediaSlide(0)} style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.4)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>&lt;</button>}
+                {mediaSlide===0&&<button onClick={()=>setMediaSlide(1)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.4)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>&gt;</button>}
+              </>}
+              {/* Tap for full size hint on photo */}
+              {mediaSlide===0&&selectedProduct.image&&<div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",padding:"3px 8px",borderRadius:6,fontSize:10}}>Tap for full size</div>}
+            </div>}
+            {!selectedProduct.image&&!selectedProduct.video&&<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface)",borderRadius:"16px 16px 0 0",color:"var(--dim)",fontSize:13}}>No media</div>}
+
             <div style={{padding:16}}>
               <p style={{fontSize:11,color:"var(--dim)",fontWeight:600,letterSpacing:".08em"}}>SKU: {selectedProduct.sku} - {selectedProduct.category}</p>
               <h2 style={{fontSize:17,fontWeight:700,marginTop:3,marginBottom:6}}>{selectedProduct.name}</h2>
               <span style={{fontFamily:"'Outfit'",fontSize:22,fontWeight:800,color:"var(--accent)"}}>{fmt(selectedProduct.price)}</span>
-              
-              {selectedProduct.description&&<p style={{color:"var(--muted)",fontSize:14,lineHeight:1.6,marginTop:12,marginBottom:12}}>{selectedProduct.description}</p>}
-              
-              <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12,marginBottom:16}}>
+              {selectedProduct.description&&<p style={{color:"var(--muted)",fontSize:13,lineHeight:1.5,marginTop:10,marginBottom:10}}>{selectedProduct.description}</p>}
+              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:10,marginBottom:14}}>
                 <Stars rating={selectedProduct.smellRating} label="Smell"/>
                 <Stars rating={selectedProduct.tasteRating} label="Taste"/>
                 {selectedProduct.potency&&<span style={{fontSize:11,color:"var(--dim)"}}>Potency: <strong style={{color:"var(--text)"}}>{selectedProduct.potency}</strong></span>}
                 {selectedProduct.strain&&<span style={{fontSize:11,color:"var(--dim)"}}>Strain: <strong style={{color:"var(--text)"}}>{selectedProduct.strain}</strong></span>}
                 {selectedProduct.weight&&<span style={{fontSize:11,color:"var(--dim)"}}>Weight: <strong style={{color:"var(--text)"}}>{selectedProduct.weight}</strong></span>}
               </div>
-              
-              <div style={{display:"flex",gap:12}}>
-                <button onClick={()=>{addToCart(selectedProduct);setSelectedProduct(null);}} style={{flex:1,padding:"12px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--accent),#8b5cf6)",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>Add to Cart</button>
-                <button onClick={()=>setSelectedProduct(null)} style={{padding:"12px 16px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--muted)",fontSize:14,cursor:"pointer"}}>Close</button>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{addToCart(selectedProduct);setSelectedProduct(null);}} style={{flex:1,padding:"12px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--accent),#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Add to Cart</button>
+                <button onClick={()=>setSelectedProduct(null)} style={{padding:"12px 16px",borderRadius:10,border:"1px solid var(--border)",background:"var(--surface)",color:"var(--muted)",fontSize:13,cursor:"pointer"}}>Close</button>
               </div>
             </div>
           </div>
-        </div>)}
-
+        </div>}
         {/* SHOP PAGE */}
         {page==="shop"&&!loading&&<>
           <div style={{textAlign:"center",padding:"40px 20px 32px",background:"radial-gradient(ellipse at 50% 0%,var(--accent-glow) 0%,transparent 70%)",marginBottom:28,borderRadius:20}}>
@@ -125,17 +144,15 @@ export default function StoreFront() {
             </div>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search..." style={{...is,width:200}}/>
           </div>
-          {products.length===0&&<div style={{textAlign:"center",padding:60,color:"var(--muted)"}}><p>No products listed yet.</p></div>}
-          
-          {/* PRODUCT GRID - VERTICAL CARDS */}
+          {products.filter(p=>p.name).length===0&&<div style={{textAlign:"center",padding:60,color:"var(--muted)"}}><p>No products listed yet.</p></div>}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:16}}>
             {filtered.map((product,i)=>{
               const inStock=product.inStock!==false;
-              return(<div key={product.id} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",overflow:"hidden",cursor:"pointer",opacity:inStock?1:0.55,transition:"transform .2s",animation:"fadeUp .4s ease both "+(i*0.06)+"s"}} onClick={()=>setSelectedProduct(product)}>
+              return(<div key={product.id} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",overflow:"hidden",cursor:"pointer",opacity:inStock?1:0.55,transition:"transform .2s"}} onClick={()=>setSelectedProduct(product)}>
                 <div style={{position:"relative"}}>
-                  {product.image?(isVideo(product.image)?<video src={product.image} muted style={{width:"100%",aspectRatio:"3/4",objectFit:"cover"}}/>:<img src={product.image} alt={product.name} style={{width:"100%",aspectRatio:"3/4",objectFit:"cover"}}/>)
-                  :<div style={{width:"100%",aspectRatio:"3/4",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,var(--surface),var(--card))",color:"var(--dim)",fontSize:13}}>{product.name}</div>}
-                  {product.video&&<div style={{position:"absolute",bottom:10,left:10,background:"rgba(0,0,0,.6)",color:"#fff",padding:"3px 8px",borderRadius:5,fontSize:10,display:"flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>Video</div>}
+                  {product.image?<img src={product.image} alt={product.name} style={{width:"100%",aspectRatio:"3/4",objectFit:"cover",display:"block"}}/>
+                  :<div style={{width:"100%",aspectRatio:"3/4",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--surface)",color:"var(--dim)",fontSize:13}}>{product.name}</div>}
+                  {product.video&&<div style={{position:"absolute",bottom:8,left:8,background:"rgba(0,0,0,.6)",color:"#fff",padding:"3px 8px",borderRadius:5,fontSize:10,display:"flex",alignItems:"center",gap:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>Video</div>}
                   {product.badge&&<span style={{position:"absolute",top:10,right:10,background:product.badge==="HOT"?"var(--red)":product.badge==="NEW"?"var(--accent)":product.badge==="SALE"?"var(--green)":"var(--gold)",color:"#fff",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:6}}>{product.badge}</span>}
                 </div>
                 <div style={{padding:"14px 16px 16px"}}>
@@ -152,7 +169,6 @@ export default function StoreFront() {
             })}
           </div>
         </>}
-
         {/* CART PAGE */}
         {page==="cart"&&<div style={{maxWidth:800,margin:"0 auto"}}>
           <button onClick={()=>setPage("shop")} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:14,marginBottom:20}}>Back to Shop</button>
@@ -160,7 +176,7 @@ export default function StoreFront() {
           {cart.length===0?<div style={{textAlign:"center",padding:"60px 20px",background:"var(--surface)",borderRadius:16,border:"1px solid var(--border)"}}><p style={{color:"var(--muted)",fontSize:16,marginBottom:20}}>Your cart is empty</p><button onClick={()=>setPage("shop")} style={{padding:"12px 28px",borderRadius:10,border:"none",background:"var(--accent)",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>Browse Products</button></div>
           :<>
             <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
-              {cart.map((item,i)=>(<div key={item.id} style={{display:"flex",alignItems:"center",gap:14,background:"var(--card)",borderRadius:14,padding:"14px 18px",border:"1px solid var(--border)",flexWrap:"wrap"}}>
+              {cart.map(item=>(<div key={item.id} style={{display:"flex",alignItems:"center",gap:14,background:"var(--card)",borderRadius:14,padding:"14px 18px",border:"1px solid var(--border)",flexWrap:"wrap"}}>
                 <div style={{width:48,height:48,borderRadius:10,overflow:"hidden",background:"var(--surface)",flexShrink:0}}>
                   {item.image?<img src={item.image} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:10,color:"var(--dim)"}}>No img</div>}
                 </div>
@@ -187,10 +203,9 @@ export default function StoreFront() {
             <div style={{background:"var(--card)",borderRadius:14,padding:20,border:"1px solid var(--border)",marginBottom:16}}>
               <h3 style={{fontSize:14,fontWeight:600,marginBottom:14,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".04em"}}>Payment Method</h3>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {PAYMENT_METHODS.map(opt=>(<button key={opt.id} onClick={()=>setPayment(opt.id)} style={{padding:"10px 22px",borderRadius:10,border:"1px solid "+(payment===opt.id?"var(--accent)":"var(--border)"),background:payment===opt.id?"rgba(108,92,231,.12)":"var(--surface)",color:payment===opt.id?"var(--accent)":"var(--muted)",cursor:"pointer",fontSize:13,fontWeight:600}}>{opt.label}{opt.fee>0&&" ("+opt.fee+"%)"}</button>))}
+                {PAYMENT_METHODS.map(opt=>(<button key={opt.id} onClick={()=>setPayment(opt.id)} style={{padding:"10px 22px",borderRadius:10,border:"1px solid "+(payment===opt.id?"var(--accent)":"var(--border)"),background:payment===opt.id?"rgba(108,92,231,.12)":"var(--surface)",color:payment===opt.id?"var(--accent)":"var(--muted)",cursor:"pointer",fontSize:13,fontWeight:600}}>{opt.label}</button>))}
               </div>
             </div>
-            
             <div style={{background:"var(--card)",borderRadius:14,padding:24,border:"1px solid var(--border)",marginBottom:20}}>
               <h3 style={{fontSize:14,fontWeight:600,marginBottom:16,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".04em"}}>Order Summary</h3>
               {[{label:"Subtotal",value:fmt(subtotal)},{label:"Shipping ("+shipOption.label+")",value:shipOption.price===0?"FREE":fmt(shipOption.price),color:shipOption.price===0?"var(--green)":null},{label:"Payment Method",value:payOption.label}].map((row,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:10,fontSize:14,color:"var(--muted)"}}><span>{row.label}</span><span style={{fontWeight:500,color:row.color||"var(--text)"}}>{row.value}</span></div>))}
