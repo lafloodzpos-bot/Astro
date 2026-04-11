@@ -25,7 +25,7 @@ export default function StoreFront() {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const touchStart = useRef(null);
 
-  useEffect(() => { fetch("/api/products").then(r=>r.json()).then(d=>{setProducts(d);setLoading(false);}).catch(()=>setLoading(false)); }, []);
+  useEffect(() => { fetch("/api/products").then(r=>r.json()).then(d=>{d.sort((a,b)=>{const da=a._internalDateAdded||"";const db=b._internalDateAdded||"";return db.localeCompare(da);});setProducts(d);setLoading(false);}).catch(()=>setLoading(false)); }, []);
   useEffect(() => { document.body.style.overflow=(sel||fsMedia)?"hidden":""; return()=>{document.body.style.overflow="";}; }, [sel,fsMedia]);
   useEffect(() => { setSlide(0); setVideoPlaying(false); }, [sel]);
 
@@ -110,6 +110,8 @@ export default function StoreFront() {
                 <Stars rating={sel.smellRating} label="Smell"/>
                 {sel.strain&&<span style={{fontSize:10,color:"var(--dim)"}}>Strain: <strong style={{color:"var(--text)"}}>{sel.strain}</strong></span>}
                 {sel.weight&&<span style={{fontSize:10,color:"var(--dim)"}}>Weight/Qty: <strong style={{color:"var(--text)"}}>{sel.weight}</strong></span>}
+                {sel.dateAdded&&<span style={{fontSize:10,color:"var(--dim)"}}>Added: <strong style={{color:"var(--text)"}}>{sel.dateAdded}</strong></span>}
+                {sel.dateUpdated&&<span style={{fontSize:10,color:"var(--dim)"}}>Updated: <strong style={{color:"var(--text)"}}>{sel.dateUpdated}</strong></span>}
               </div>
               <div style={{display:"flex",gap:10}}>
                 {sel.inStock!==false?<button onClick={()=>{addToCart(sel);setSel(null);}} style={{flex:1,padding:"11px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--accent),#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Add to Cart</button>
