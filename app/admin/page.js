@@ -18,7 +18,7 @@ export default function AdminPanel() {
   const flash = (text, type = "success") => { setMessage({ text, type }); setTimeout(() => setMessage(null), 3000); };
   const loadProducts = async () => { setLoading(true); try { const res = await fetch("/api/products"); setProducts(await res.json()); } catch { flash("Failed to load", "error"); } setLoading(false); };
   const login = () => { if (password === ADMIN_PASSWORD) { setAuthed(true); loadProducts(); } else { flash("Wrong password", "error"); } };
-  const startNew = () => { setEditing("new"); setForm({ name:"", sku:"QP"+Math.floor(10000+Math.random()*90000), price:"", category:CATEGORIES[1]||"Highs", image:"", video:"", inStock:true, description:"", smellRating:"", tasteRating:"", potency:"", strain:"", weight:"", badge:"" }); };
+  const startNew = () => { setEditing("new"); setForm({ name:"", sku:"QP"+Math.floor(10000+Math.random()*90000), price:"", category:CATEGORIES[1]||"Highs", image:"", video:"", inStock:true, description:"", smellRating:"", tasteRating:"", potency:"", strain:"", weight:"", badge:"", dateAdded: new Date().toLocaleDateString("en-US"), dateUpdated: "" }); };
   const startEdit = (p) => { setEditing(p.id); setForm({...p}); };
   
   const uploadFile = async (file, field, setUploading) => {
