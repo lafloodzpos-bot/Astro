@@ -18,7 +18,7 @@ export default function StoreFront() {
   const [shipping, setShipping] = useState("free");
   const [payment, setPayment] = useState("crypto");
   const [copied, setCopied] = useState(false);
-  const [address, setAddress] = useState({name:"",street:"",city:"",state:"",zip:""});
+  
   const [addedId, setAddedId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
@@ -42,8 +42,7 @@ export default function StoreFront() {
 
   const generateOrderText = () => {
     const items = cart.map(item=>`${item.qty}-${item.name} (${payOption.label}) [SKU: ${item.sku}] [${fmt(item.price)}]=${fmt(item.price*item.qty)}`).join("\n");
-    const addr = `${address.name}\n${address.street}\n${address.city}, ${address.state} ${address.zip}`;
-    return `ORDER REQUEST\n\nITEMS:\n${items}\n\nORDER SUMMARY\n-------------\nTotal Items: ${cartCount}\nSubtotal: ${fmt(subtotal)}\nShipping (${shipOption.label}): ${fmt(shipOption.price)}\n${payOption.label.toUpperCase()} Fee ${payOption.fee}% = ${fmt(feeAmount)}\nTotal due = ${fmt(total)}\n${shipping==="free"?"FREE SHIPPING ORDER SELECTED":""+shipOption.label.toUpperCase()+" SELECTED"}\nSHIPPING ADDRESS:\n${addr}\nOrder Number: ${genOrderNum()}`;
+    return `ORDER REQUEST\n\nITEMS:\n${items}\n\nORDER SUMMARY\n-------------\nTotal Items: ${cartCount}\nSubtotal: ${fmt(subtotal)}\nShipping (${shipOption.label}): ${fmt(shipOption.price)}\nPayment: ${payOption.label}\nTotal due = ${fmt(total)}\n${shipping==="free"?"FREE SHIPPING (UPS 2 Day Air / USPS Priority)":"OVERNIGHT NEXT DAY SHIPPING (+$50)"}\nOrder Number: ${genOrderNum()}\n\nShipping address will be collected after payment is processed.`;
   };
   const copyOrder = async () => { try{await navigator.clipboard.writeText(generateOrderText());}catch{const t=document.createElement("textarea");t.value=generateOrderText();document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);} setCopied(true);setTimeout(()=>setCopied(false),3000); };
 
@@ -191,21 +190,10 @@ export default function StoreFront() {
                 {PAYMENT_METHODS.map(opt=>(<button key={opt.id} onClick={()=>setPayment(opt.id)} style={{padding:"10px 22px",borderRadius:10,border:"1px solid "+(payment===opt.id?"var(--accent)":"var(--border)"),background:payment===opt.id?"rgba(108,92,231,.12)":"var(--surface)",color:payment===opt.id?"var(--accent)":"var(--muted)",cursor:"pointer",fontSize:13,fontWeight:600}}>{opt.label}{opt.fee>0&&" ("+opt.fee+"%)"}</button>))}
               </div>
             </div>
-            <div style={{background:"var(--card)",borderRadius:14,padding:20,border:"1px solid var(--border)",marginBottom:16}}>
-              <h3 style={{fontSize:14,fontWeight:600,marginBottom:14,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".04em"}}>Shipping Address</h3>
-              <div style={{display:"grid",gap:10}}>
-                <input value={address.name} onChange={e=>setAddress(p=>({...p,name:e.target.value}))} placeholder="Full Name" style={is}/>
-                <input value={address.street} onChange={e=>setAddress(p=>({...p,street:e.target.value}))} placeholder="Street Address" style={is}/>
-                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:10}}>
-                  <input value={address.city} onChange={e=>setAddress(p=>({...p,city:e.target.value}))} placeholder="City" style={is}/>
-                  <input value={address.state} onChange={e=>setAddress(p=>({...p,state:e.target.value}))} placeholder="State" style={is}/>
-                  <input value={address.zip} onChange={e=>setAddress(p=>({...p,zip:e.target.value}))} placeholder="ZIP" style={is}/>
-                </div>
-              </div>
-            </div>
+            
             <div style={{background:"var(--card)",borderRadius:14,padding:24,border:"1px solid var(--border)",marginBottom:20}}>
               <h3 style={{fontSize:14,fontWeight:600,marginBottom:16,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".04em"}}>Order Summary</h3>
-              {[{label:"Subtotal",value:fmt(subtotal)},{label:"Shipping ("+shipOption.label+")",value:shipOption.price===0?"FREE":fmt(shipOption.price),color:shipOption.price===0?"var(--green)":null},{label:payOption.label+" Fee ("+payOption.fee+"%)",value:fmt(feeAmount)}].map((row,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:10,fontSize:14,color:"var(--muted)"}}><span>{row.label}</span><span style={{fontWeight:500,color:row.color||"var(--text)"}}>{row.value}</span></div>))}
+              {[{label:"Subtotal",value:fmt(subtotal)},{label:"Shipping ("+shipOption.label+")",value:shipOption.price===0?"FREE":fmt(shipOption.price),color:shipOption.price===0?"var(--green)":null},{label:"Payment Method",value:payOption.label}].map((row,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:10,fontSize:14,color:"var(--muted)"}}><span>{row.label}</span><span style={{fontWeight:500,color:row.color||"var(--text)"}}>{row.value}</span></div>))}
               <div style={{borderTop:"1px solid var(--border)",paddingTop:14,marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{fontSize:16,fontWeight:700}}>Total Due</span>
                 <span style={{fontFamily:"'Outfit'",fontSize:26,fontWeight:800,color:"var(--accent)"}}>{fmt(total)}</span>
