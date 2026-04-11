@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SITE_TAGLINE, SITE_DESCRIPTION, SITE_NAME, CATEGORIES, SHIPPING_OPTIONS, PAYMENT_METHODS, fmt, genOrderNum } from "@/lib/config";
 
 function Stars({ rating, label }) {
@@ -22,10 +22,12 @@ export default function StoreFront() {
   const [sel, setSel] = useState(null);
   const [fsMedia, setFsMedia] = useState(null);
   const [slide, setSlide] = useState(0);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const touchStart = useRef(null);
 
   useEffect(() => { fetch("/api/products").then(r=>r.json()).then(d=>{setProducts(d);setLoading(false);}).catch(()=>setLoading(false)); }, []);
   useEffect(() => { document.body.style.overflow=(sel||fsMedia)?"hidden":""; return()=>{document.body.style.overflow="";}; }, [sel,fsMedia]);
-  useEffect(() => { setSlide(0); }, [sel]);
+  useEffect(() => { setSlide(0); setVideoPlaying(false); }, [sel]);
 
   const cc = cart.reduce((s,i)=>s+i.qty,0);
   const sub = cart.reduce((s,i)=>s+i.price*i.qty,0);
@@ -39,6 +41,17 @@ export default function StoreFront() {
   const rmCart = (id) => setCart(prev=>prev.filter(i=>i.id!==id));
   const filtered = products.filter(p => { if(!p.name)return false; return (category==="All"||p.category===category)&&p.name.toLowerCase().includes(search.toLowerCase()); });
 
+  const handleSwipe = (e) => { touchStart.current = e.touches[0].clientX; };
+  const handleSwipeEnd = (e, hasVideo, hasImage) => {
+    if (!touchStart.current) return;
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && hasVideo && slide === 0) setSlide(1);
+      if (diff < 0 && hasImage && slide === 1) setSlide(0);
+    }
+    touchStart.current = null;
+  };
+
   const orderText = () => {
     const items = cart.map(i=>`${i.qty}-${i.name} (${po.label}) [SKU: ${i.sku}] [${fmt(i.price)}]=${fmt(i.price*i.qty)}`).join("\n");
     return `ORDER REQUEST\n\nITEMS:\n${items}\n\nORDER SUMMARY\n-------------\nTotal Items: ${cc}\nSubtotal: ${fmt(sub)}\nShipping (${so.label}): ${fmt(so.price)}\nPayment: ${po.label}\nTotal due = ${fmt(tot)}\n${shipping==="free"?"FREE SHIPPING (UPS 2 Day Air / USPS Priority)":"OVERNIGHT NEXT DAY SHIPPING (+$50)"}\nOrder Number: ${genOrderNum()}\n\nShipping address will be collected after payment is processed.`;
@@ -48,10 +61,12 @@ export default function StoreFront() {
 
   return (
     <div>
-      {/* FULLSCREEN */}
-      {fsMedia&&<div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:999,background:"#000",touchAction:"none"}}>
-        <button onClick={()=>setFsMedia(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.3)",border:"none",color:"#fff",fontSize:18,width:40,height:40,borderRadius:"50%",cursor:"pointer",zIndex:1000}}>X</button>
-        {(fsMedia.includes('.mp4')||fsMedia.includes('.mov')||fsMedia.includes('.webm'))?<video src={fsMedia} controls autoPlay playsInline style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<img src={fsMedia} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}
+      {/* FULLSCREEN - scrollable for zoom */}
+      {fsMedia&&<div style={{position:"fixed",top:0,left:0,width:"100vw",height:"100vh",zIndex:999,background:"#000",overflow:"auto",WebkitOverflowScrolling:"touch"}}>
+        <button onClick={()=>setFsMedia(null)} style={{position:"fixed",top:16,right:16,background:"rgba(255,255,255,.3)",border:"none",color:"#fff",fontSize:18,width:40,height:40,borderRadius:"50%",cursor:"pointer",zIndex:1000}}>X</button>
+        {(fsMedia.includes('.mp4')||fsMedia.includes('.mov')||fsMedia.includes('.webm'))
+          ?<video src={fsMedia} controls autoPlay playsInline style={{width:"100%",height:"100vh",objectFit:"contain"}}/>
+          :<img src={fsMedia} alt="" style={{width:"200%",maxWidth:"200%",display:"block"}}/>}
       </div>}
 
       {/* HEADER */}
@@ -77,28 +92,37 @@ export default function StoreFront() {
         {sel&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>setSel(null)}>
           <div onClick={e=>e.stopPropagation()} style={{background:"var(--card)",borderRadius:16,border:"1px solid var(--border)",width:"100%",maxWidth:360,maxHeight:"85vh",display:"flex",flexDirection:"column",overflow:"hidden"}}>
             
-            {/* MEDIA AREA - fixed height, no overflow */}
-            <div style={{position:"relative",width:"100%",height:280,flexShrink:0,overflow:"hidden",borderRadius:"16px 16px 0 0",background:"#000"}}>
+            {/* MEDIA - swipeable with touch */}
+            <div style={{position:"relative",width:"100%",height:videoPlaying?undefined:280,aspectRatio:videoPlaying?"3/4":undefined,flexShrink:0,overflow:"hidden",borderRadius:"16px 16px 0 0",background:"#000"}}
+              onTouchStart={handleSwipe}
+              onTouchEnd={e=>handleSwipeEnd(e,!!sel.video,!!sel.image)}>
               <div style={{display:"flex",width:sel.video&&sel.image?"200%":"100%",height:"100%",transition:"transform 0.3s ease",transform:"translateX(-"+(slide*(sel.image&&sel.video?50:0))+"%)" }}>
                 {sel.image&&<div style={{width:sel.video?"50%":"100%",height:"100%",flexShrink:0,cursor:"pointer"}} onClick={()=>setFsMedia(sel.image)}>
                   <img src={sel.image} alt={sel.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                 </div>}
                 {sel.video&&<div style={{width:sel.image?"50%":"100%",height:"100%",flexShrink:0}}>
-                  <video src={sel.video} controls playsInline style={{width:"100%",height:"100%",objectFit:"contain",background:"#000"}}/>
+                  <video src={sel.video} controls playsInline
+                    onPlay={()=>setVideoPlaying(true)}
+                    onPause={()=>setVideoPlaying(false)}
+                    onEnded={()=>setVideoPlaying(false)}
+                    style={{width:"100%",height:"100%",objectFit:videoPlaying?"contain":"cover",background:"#000"}}/>
                 </div>}
               </div>
-              {/* Navigation arrows */}
+              {/* Arrows */}
               {sel.image&&sel.video&&slide===0&&<button onClick={()=>setSlide(1)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16}}>&gt;</button>}
               {sel.image&&sel.video&&slide===1&&<button onClick={()=>setSlide(0)} style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",border:"none",color:"#fff",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:16}}>&lt;</button>}
-              {/* Dots and hints */}
+              {/* Dots */}
               {sel.image&&sel.video&&<div style={{position:"absolute",bottom:8,left:0,right:0,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                 <div style={{background:"rgba(0,0,0,.5)",color:"#fff",padding:"2px 8px",borderRadius:4,fontSize:9}}>{slide===0?"Swipe for video":"Swipe for photo"}</div>
-                <div style={{display:"flex",gap:5}}><div onClick={()=>setSlide(0)} style={{width:7,height:7,borderRadius:"50%",background:"#fff",opacity:slide===0?1:0.4,cursor:"pointer"}}/><div onClick={()=>setSlide(1)} style={{width:7,height:7,borderRadius:"50%",background:"#fff",opacity:slide===1?1:0.4,cursor:"pointer"}}/></div>
+                <div style={{display:"flex",gap:5}}>
+                  <div onClick={()=>setSlide(0)} style={{width:7,height:7,borderRadius:"50%",background:"#fff",opacity:slide===0?1:0.4,cursor:"pointer"}}/>
+                  <div onClick={()=>setSlide(1)} style={{width:7,height:7,borderRadius:"50%",background:"#fff",opacity:slide===1?1:0.4,cursor:"pointer"}}/>
+                </div>
               </div>}
               {slide===0&&sel.image&&<div style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,.5)",color:"#fff",padding:"2px 8px",borderRadius:4,fontSize:9}}>Tap for full size</div>}
             </div>
 
-            {/* PRODUCT INFO - scrollable */}
+            {/* INFO */}
             <div style={{padding:14,overflowY:"auto",flex:1}}>
               <p style={{fontSize:10,color:"var(--dim)",fontWeight:600,letterSpacing:".06em"}}>SKU: {sel.sku} - {sel.category}</p>
               <h2 style={{fontSize:16,fontWeight:700,marginTop:2,marginBottom:4}}>{sel.name}</h2>
