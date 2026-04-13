@@ -1,6 +1,7 @@
+import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { getProducts, addProduct, updateProduct, deleteProduct } from "@/lib/db";
-import { ADMIN_PASSWORD } from "@/lib/config";
+import { ADMIN_PASSWORD as DEFAULT_PASSWORD } from "@/lib/config";
 
 function isAuthed(request) {
   const pw = request.headers.get("x-admin-password");
