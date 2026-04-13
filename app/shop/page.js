@@ -25,6 +25,7 @@ export default function StoreFront() {
   const [videoPlaying, setVideoPlaying] = useState(false);
   const touchStart = useRef(null);
 
+  useEffect(() => { fetch("/api/pin").then(r=>r.json()).then(d=>{if(!d.enabled||!d.authed)window.location.href="/pin";}).catch(()=>{}); }, []);
   useEffect(() => { fetch("/api/products").then(r=>r.json()).then(d=>{d.sort((a,b)=>{const da=a._internalDateAdded||"";const db=b._internalDateAdded||"";return db.localeCompare(da);});setProducts(d);setLoading(false);}).catch(()=>setLoading(false)); }, []);
   useEffect(() => { document.body.style.overflow=(sel||fsMedia)?"hidden":""; return()=>{document.body.style.overflow="";}; }, [sel,fsMedia]);
   useEffect(() => { setSlide(0); setVideoPlaying(false); }, [sel]);
