@@ -11,19 +11,49 @@ export async function GET(request) {
   return NextResponse.json({ enabled: true, authed: !!valid });
 }
 
-// POST - verify PIN
+// POST - verify PIN with strong brute force protection
 export async function POST(request) {
-  const { pin } = await request.json();
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
   
   // Check if site is enabled
   const siteEnabled = await kv.get("site_enabled");
   if (siteEnabled === false) return NextResponse.json({ error: "Site is currently disabled" }, { status: 403 });
   
-  // Check rate limit (10 attempts per 10 minutes per IP)
+  // RATE LIMIT - 5 attempts per 10 minutes per IP (reduced from 10)
   const rlKey = "ratelimit:" + ip;
   const attempts = (await kv.get(rlKey)) || 0;
-  if (attempts >= 10) return NextResponse.json({ error: "Too many attempts. Try again in 10 minutes.", blocked: true }, { status: 429 });
+  if (attempts >= 5) {
+    // Log blocked attempt
+    const blockLogs = (await kv.get("block_logs")) || [];
+    blockLogs.unshift({ ip, date: new Date().toISOString(), attempts });
+    if (blockLogs.length > 200) blockLogs.length = 200;
+    await kv.set("block_logs", blockLogs);
+    return NextResponse.json({ error: "Too many attempts. Try again in 10 minutes.", blocked: true }, { status: 429 });
+  }
+  
+  // GLOBAL rate limit - max 30 total attempts across ALL IPs per minute (stops distributed attacks)
+  const globalKey = "ratelimit:global:" + Math.floor(Date.now() / 60000);
+  const globalAttempts = (await kv.get(globalKey)) || 0;
+  if (globalAttempts >= 30) {
+    return NextResponse.json({ error: "Too many attempts. Try again shortly.", blocked: true }, { status: 429 });
+  }
+  await kv.set(globalKey, globalAttempts + 1, { ex: 120 });
+  
+  // Add artificial delay - makes brute force even slower (200-500ms random)
+  await new Promise(r => setTimeout(r, 200 + Math.random() * 300));
+  
+  let pin;
+  try {
+    const body = await request.json();
+    pin = body.pin;
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+  
+  if (!pin || typeof pin !== "string" || pin.length > 10 || !/^\d+$/.test(pin)) {
+    await kv.set(rlKey, attempts + 1, { ex: 600 });
+    return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+  }
   
   // Get PIN list
   const pins = (await kv.get("user_pins")) || [];
@@ -31,7 +61,8 @@ export async function POST(request) {
   
   if (!match) {
     await kv.set(rlKey, attempts + 1, { ex: 600 });
-    return NextResponse.json({ error: "Invalid PIN", remaining: 9 - attempts }, { status: 401 });
+    const remaining = 4 - attempts;
+    return NextResponse.json({ error: "Invalid PIN. " + remaining + " attempts remaining.", remaining }, { status: 401 });
   }
   
   // Valid PIN - create session
