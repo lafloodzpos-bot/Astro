@@ -67,7 +67,7 @@ export default function AdminPanel() {
       <header style={{background:"rgba(10,10,15,.88)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)",padding:"0 24px",position:"sticky",top:0,zIndex:100}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}><div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,var(--accent),#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#fff"}}>A</div><span style={{fontFamily:"'Outfit'",fontWeight:700,fontSize:18}}>Admin Panel</span></div>
-          <div style={{display:"flex",gap:12,alignItems:"center"}}><a href="/" style={{fontSize:13,color:"var(--muted)"}}>View Store</a><button onClick={()=>{setAuthed(false);setPassword("");}} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--muted)"}}>Logout</button></div>
+          <div style={{display:"flex",gap:12,alignItems:"center"}}><a href="/shop" style={{fontSize:13,color:"var(--muted)"}}>View Store</a><a href="/admin/settings" style={{fontSize:13,color:"var(--accent)"}}>Settings</a><button onClick={()=>{setAuthed(false);setPassword("");}} style={{...bs("var(--surface)"),border:"1px solid var(--border)",color:"var(--muted)"}}>Logout</button></div>
         </div>
       </header>
       {message&&<div style={{position:"fixed",top:80,left:"50%",transform:"translateX(-50%)",zIndex:200,background:message.type==="error"?"var(--red)":"var(--green)",color:"#fff",padding:"10px 24px",borderRadius:10,fontSize:14,fontWeight:600}}>{message.text}</div>}
