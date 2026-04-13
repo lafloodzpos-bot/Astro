@@ -147,6 +147,7 @@ export default function AdminPanel() {
                 :field.type==="select"?<select value={form[field.key]||""} onChange={e=>setForm(p=>({...p,[field.key]:e.target.value}))} style={is}><option value="">-- Select --</option>{field.options.map(o=><option key={o} value={o}>{o}</option>)}</select>
                 :field.type==="date"?<DateInput value={form[field.key]} onChange={v=>setForm(p=>({...p,[field.key]:v}))} placeholder="mm/dd/yyyy"/>
                 :<input value={form[field.key]||""} onChange={e=>setForm(p=>({...p,[field.key]:e.target.value}))} style={is}/>}
+                {field.subtext&&<p style={{fontSize:11,color:"var(--dim)",marginTop:4,fontStyle:"italic"}}>{field.subtext}</p>}
               </div>)}
             </div>
             <div style={{display:"flex",gap:12,marginTop:24,paddingTop:20,borderTop:"1px solid var(--border)"}}>
